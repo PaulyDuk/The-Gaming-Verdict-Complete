@@ -11,6 +11,7 @@ from publisher.models import Publisher
 from django.contrib.auth.models import User
 import datetime
 import random
+from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -115,7 +116,7 @@ class Command(BaseCommand):
                         review_score=review_score,
                         review_text=review_text,
                         reviewed_by=reviewer,
-                        review_date=datetime.datetime.now(),
+                        review_date=timezone.now(),
                         featured_image=featured_image,
                         is_featured=False,
                         is_published=True
@@ -163,7 +164,7 @@ class Command(BaseCommand):
             defaults={
                 'description': dev.get('description', ''),
                 'website': dev.get('website', ''),
-                'founded_year': dev.get('founded_year'),
+                'founded_year': dev.get('founded_year') or None,
                 'logo': cloud_logo or logo_url or ''
             }
         )
@@ -194,7 +195,7 @@ class Command(BaseCommand):
             defaults={
                 'description': pub.get('description', ''),
                 'website': pub.get('website', ''),
-                'founded_year': pub.get('founded_year'),
+                'founded_year': pub.get('founded_year') or None,
                 'logo': cloud_logo or logo_url or ''
             }
         )
