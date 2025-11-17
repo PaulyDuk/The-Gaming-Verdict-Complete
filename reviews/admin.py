@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin
+from django.core.management import call_command
+from django.contrib import messages
 from .models import Review, Publisher, Developer, UserComment, UserReview
 # Register your models here.
 
@@ -58,7 +60,8 @@ class ReviewAdmin(SummernoteModelAdmin):
     list_per_page = 25
     actions = [
         'mark_as_published', 'mark_as_unpublished',
-        'mark_as_featured', 'mark_as_unfeatured'
+        'mark_as_featured', 'mark_as_unfeatured',
+        'auto_generate_reviews'
     ]
 
     def mark_as_published(self, request, queryset):
@@ -80,6 +83,22 @@ class ReviewAdmin(SummernoteModelAdmin):
         updated = queryset.update(is_featured=False)
         self.message_user(request, f'{updated} reviews unmarked as featured.')
     mark_as_unfeatured.short_description = "Mark selected as not featured"
+
+    def auto_generate_reviews(self, request, queryset):
+        """Generate 50 new reviews using the auto_generate_reviews command"""
+        try:
+            call_command('auto_generate_reviews', count=50)
+            messages.success(
+                request,
+                'Auto-generate reviews command executed successfully! '
+                'Check the review list to see new reviews.'
+            )
+        except Exception as e:
+            messages.error(
+                request,
+                f'Error running auto-generate reviews: {str(e)}'
+            )
+    auto_generate_reviews.short_description = "Auto-generate 50 new reviews"
 
 
 @admin.register(UserComment)
