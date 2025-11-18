@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2 class="mb-4">Auto-Generate Reviews</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Generate Reviews Automatically</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        This tool will automatically generate reviews from popular games using the IGDB API.
+                        Reviews will include cover images, developer/publisher info, and AI-generated content.
+                    </p>
+                    
+                    <form method="post" action="{% url 'reviews:auto_generate_create' %}">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="count" class="form-label">Number of Reviews</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="count" 
+                                           name="count" 
+                                           value="50" 
+                                           min="1" 
+                                           max="100" 
+                                           required>
+                                    <div class="form-text">Between 1 and 100 reviews</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="min_score" class="form-label">Minimum Score</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="min_score" 
+                                           name="min_score" 
+                                           value="5.0" 
+                                           min="1.0" 
+                                           max="9.9" 
+                                           step="0.1" 
+                                           required>
+                                    <div class="form-text">1.0 to 9.9</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="max_score" class="form-label">Maximum Score</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="max_score" 
+                                           name="max_score" 
+                                           value="10.0" 
+                                           min="1.1" 
+                                           max="10.0" 
+                                           step="0.1" 
+                                           required>
+                                    <div class="form-text">1.1 to 10.0</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-magic"></i> Generate Reviews
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> What this tool does:</h6>
+                    <ul class="mb-0">
+                        <li>Searches popular game franchises from IGDB</li>
+                        <li>Creates reviews with random scores in your specified range</li>
+                        <li>Downloads and uploads cover images to Cloudinary</li>
+                        <li>Creates developer and publisher entries</li>
+                        <li>Adds genre information</li>
+                        <li>Generates review text content</li>
+                        <li>Skips games that already have reviews</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-3 text-center">
+                <a href="{% url 'reviews:review_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Reviews
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('min_score').addEventListener('input', function() {
+    const minScore = parseFloat(this.value);
+    const maxScoreInput = document.getElementById('max_score');
+    const maxScore = parseFloat(maxScoreInput.value);
+    
+    if (minScore >= maxScore) {
+        maxScoreInput.value = (minScore + 0.1).toFixed(1);
+    }
+});
+
+document.getElementById('max_score').addEventListener('input', function() {
+    const maxScore = parseFloat(this.value);
+    const minScoreInput = document.getElementById('min_score');
+    const minScore = parseFloat(minScoreInput.value);
+    
+    if (maxScore <= minScore) {
+        minScoreInput.value = (maxScore - 0.1).toFixed(1);
+    }
+});
+</script>
+{% endblock %}

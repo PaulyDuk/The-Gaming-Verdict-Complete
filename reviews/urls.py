@@ -1,7 +1,9 @@
 from . import views
 from .admin_views import approve_comments, approve_reviews
 from .populate_views import (populate_reviews_interface,
-                             create_reviews_from_selection)
+                             create_reviews_from_selection,
+                             auto_generate_interface,
+                             auto_generate_reviews_view)
 from django.urls import path
 
 app_name = 'reviews'
@@ -13,6 +15,9 @@ urlpatterns = [
     path('populate/', populate_reviews_interface, name='populate_interface'),
     path('populate/create/', create_reviews_from_selection,
          name='create_reviews'),
+    path('auto-generate/', auto_generate_interface, name='auto_generate'),
+    path('auto-generate/create/', auto_generate_reviews_view, 
+         name='auto_generate_create'),
     path('admin/approve-comments/', approve_comments, name='approve_comments'),
     path('admin/approve-reviews/', approve_reviews, name='approve_reviews'),
     path('<slug:slug>/', views.review_details, name='review_detail'),

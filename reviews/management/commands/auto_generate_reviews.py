@@ -155,9 +155,14 @@ class Command(BaseCommand):
         
         cloud_logo = None
         if logo_url:
-            cloud_logo = helpers.upload_developer_logo_to_cloudinary(
-                logo_url, name
-            )
+            try:
+                cloud_logo = helpers.upload_developer_logo_to_cloudinary(
+                    logo_url, name
+                )
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(f'Logo upload failed: {e}')
+                )
         
         obj, _ = Developer.objects.get_or_create(
             name=name,
@@ -186,9 +191,14 @@ class Command(BaseCommand):
         
         cloud_logo = None
         if logo_url:
-            cloud_logo = helpers.upload_publisher_logo_to_cloudinary(
-                logo_url, name
-            )
+            try:
+                cloud_logo = helpers.upload_publisher_logo_to_cloudinary(
+                    logo_url, name
+                )
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(f'Publisher logo upload failed: {e}')
+                )
         
         obj, _ = Publisher.objects.get_or_create(
             name=name,
@@ -225,25 +235,31 @@ class Command(BaseCommand):
             cover_url = 'https:' + cover_url
         
         if cover_url:
-            cloud_cover = helpers.upload_cover_to_cloudinary(
-                cover_url, title
-            )
-            if cloud_cover:
-                return cloud_cover
+            try:
+                cloud_cover = helpers.upload_cover_to_cloudinary(
+                    cover_url, title
+                )
+                if cloud_cover:
+                    return cloud_cover
+            except Exception as e:
+                self.stdout.write(
+                    self.style.WARNING(f'Cover upload failed for {title}: {e}')
+                )
         
         return 'placeholder'
 
     def get_review_text(self, title, helpers):
         """Generate review text"""
-        try:
-            return helpers.generate_ai_review(title)
-        except Exception as e:
-            msg = f'AI review failed for {title}: {e}'
-            self.stdout.write(self.style.WARNING(msg))
-            return (
-                f'<p>Auto-generated review for {title}.</p>'
-                '<p>Great gameplay and entertainment value.</p>'
-            )
+        # Skip AI generation for now due to rate limits
+        return (
+            f'<p>This is an auto-generated review for {title}.</p>'
+            '<p>The game offers engaging gameplay mechanics and provides '
+            'excellent entertainment value for players. With solid controls, '
+            'immersive graphics, and compelling storyline, this title '
+            'delivers a memorable gaming experience.</p>'
+            '<p>Overall, this game represents a quality addition to any '
+            'gaming library and is recommended for fans of the genre.</p>'
+        )
 
     def get_reviewer(self):
         """Get reviewer"""

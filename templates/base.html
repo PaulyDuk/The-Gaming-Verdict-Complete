@@ -93,11 +93,12 @@
         </li>
         {% if user.is_superuser %}
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle {% if '/reviews/populate/' in request.path or '/reviews/admin/' in request.path %}active{% endif %}" href="#" id="navbarAdminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="nav-link dropdown-toggle {% if '/reviews/populate/' in request.path or '/reviews/admin/' in request.path or '/reviews/auto-generate/' in request.path %}active{% endif %}" href="#" id="navbarAdminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 Admin
             </a>
             <ul class="dropdown-menu" aria-labelledby="navbarAdminDropdown">
                 <li><a class="dropdown-item" href="{% url 'reviews:populate_interface' %}">Manage Games</a></li>
+                <li><a class="dropdown-item" href="{% url 'reviews:auto_generate_interface' %}">Auto Generate Reviews</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="{% url 'reviews:approve_comments' %}">Manage User Comments</a></li>
                 <li><a class="dropdown-item" href="{% url 'reviews:approve_reviews' %}">Manage User Reviews</a></li>

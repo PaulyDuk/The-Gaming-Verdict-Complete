@@ -420,3 +420,47 @@ def create_reviews_from_selection(request):
     except Exception as e:
         messages.error(request, f'Error creating reviews: {str(e)}')
         return redirect('reviews:populate_interface')
+
+
+@user_passes_test(is_superuser)
+def auto_generate_interface(request):
+    """Interface for auto-generating reviews"""
+    return render(request, 'reviews/auto_generate.html')
+
+
+@user_passes_test(is_superuser)
+@require_http_methods(["POST"])
+def auto_generate_reviews_view(request):
+    """Auto-generate reviews using the management command"""
+    from django.core.management import call_command
+    
+    try:
+        count = int(request.POST.get('count', 50))
+        min_score = float(request.POST.get('min_score', 5.0))
+        max_score = float(request.POST.get('max_score', 10.0))
+        
+        # Validate input
+        if count <= 0 or count > 100:
+            messages.error(request, 'Count must be between 1 and 100')
+            return redirect('reviews:auto_generate')
+        
+        if min_score < 1 or max_score > 10 or min_score >= max_score:
+            messages.error(request, 'Invalid score range (1-10, min < max)')
+            return redirect('reviews:auto_generate')
+        
+        # Run the management command
+        call_command('auto_generate_reviews',
+                     count=count,
+                     min_score=min_score,
+                     max_score=max_score)
+        
+        messages.success(
+            request,
+            f'Successfully generated {count} reviews with scores '
+            f'{min_score}-{max_score}!'
+        )
+        
+    except Exception as e:
+        messages.error(request, f'Error generating reviews: {str(e)}')
+    
+    return redirect('reviews:auto_generate')
