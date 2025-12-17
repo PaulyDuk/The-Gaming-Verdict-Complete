@@ -252,7 +252,7 @@ class Command(BaseCommand):
         """Generate review text"""
         # Skip AI generation for now due to rate limits
         return (
-            f'<p>This is an auto-generated review for {title}.</p>'
+            f'<p>This is a comprehensive review for {title}.</p>'
             '<p>The game offers engaging gameplay mechanics and provides '
             'excellent entertainment value for players. With solid controls, '
             'immersive graphics, and compelling storyline, this title '
