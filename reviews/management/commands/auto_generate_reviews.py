@@ -51,7 +51,17 @@ class Command(BaseCommand):
             "Apex Legends", "Overwatch", "Counter-Strike", "Valorant",
             "Destiny", "Battlefield", "Mass Effect", "Elder Scrolls",
             "Fallout", "Dark Souls", "Sekiro", "Bloodborne",
-            "Monster Hunter", "Street Fighter", "Tekken", "Pokemon"
+            "Monster Hunter", "Street Fighter", "Tekken", "Pokemon",
+            "Spider-Man", "Batman", "Mortal Kombat", "Tomb Raider",
+            "Bioshock", "Portal", "Half-Life", "Dota", "League",
+            "Starcraft", "Diablo", "World of Warcraft", "Borderlands",
+            "Dishonored", "Hitman", "Splinter Cell", "Ghost Recon",
+            "Rainbow Six", "Watch Dogs", "Far Cry", "Crysis",
+            "Metro", "S.T.A.L.K.E.R.", "Dying Light", "Dead Island",
+            "Left 4 Dead", "Team Fortress", "Garry's Mod", "Rust",
+            "PUBG", "Among Us", "Fall Guys", "Rocket League",
+            "Cities", "Civilization", "Total War", "Age of Empires",
+            "Starcraft", "Command", "Anno", "SimCity"
         ]
 
         created_count = 0
@@ -70,6 +80,9 @@ class Command(BaseCommand):
                     )
                     
                     if not games:
+                        self.stdout.write(
+                            self.style.WARNING(f'No games found for: {search_term}')
+                        )
                         continue
                     
                     game = random.choice(games)
@@ -82,6 +95,9 @@ class Command(BaseCommand):
                     # Skip if exists
                     if (Review.objects.filter(title__iexact=title).exists() or
                             Review.objects.filter(slug=slug).exists()):
+                        self.stdout.write(
+                            self.style.WARNING(f'Skipping duplicate: {title}')
+                        )
                         continue
                     
                     # Random score
@@ -133,7 +149,9 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(msg))
                     
                 except Exception as e:
-                    self.stdout.write(self.style.ERROR(f'Error: {e}'))
+                    self.stdout.write(
+                        self.style.ERROR(f'Error with {search_term}: {e}')
+                    )
                     continue
         
         final_msg = f'Created {created_count} reviews'
