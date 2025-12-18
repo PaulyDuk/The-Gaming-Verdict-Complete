@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Add Developers</h1>
+            
+            <!-- Search Form -->
+            <section aria-labelledby="search-heading">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 id="search-heading" class="visually-hidden">Search for Developers</h2>
+                        <form method="post" action="{% url 'developer:populate_interface' %}">
+                            {% csrf_token %}
+                            <fieldset>
+                                <legend class="visually-hidden">Developer Search Parameters</legend>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="search" class="info-heading">Developer Name:</label>
+                                        <input type="text" class="form-control" id="search" name="search" 
+                                            value="{{ search_term|default:'' }}" placeholder="Enter developer name or leave empty for all">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="limit" class="info-heading">Search Limit:</label>
+                                        <input type="number" class="form-control" id="limit" name="limit" 
+                                            value="{{ limit|default:50 }}" min="1" max="100">
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-outline-success">Search Developers</button>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            {% if search_term and not developers %}     
+            <!-- No Results Message -->
+            <section aria-labelledby="no-results-heading">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 id="no-results-heading" class="info-heading">No developers found</h2>
+                        <p class="info-heading">No developers were found for your search term "<strong>{{ search_term }}</strong>". Please check the spelling and try again.</p>
+                        <p class="mb-0 info-heading">
+                            <small>
+                                Tips: Try searching with fewer words or alternative spellings. 
+                                For example, try "Naughty Dog" instead of "Naughty Dog LLC".
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            {% if developers %}
+            <!-- Developers Selection Form -->
+            <section aria-labelledby="developers-selection-heading">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h2 id="developers-selection-heading" class="visually-hidden">Select Developers for Creation</h2>
+                        <p class="card-text">Found {{ developers|length }} developers. Select the developers you want to create:</p>
+                    {% if developers %}
+                        {% regroup developers by exists as grouped_developers %}
+                        {% for group in grouped_developers %}
+                            {% if group.grouper %}
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>{{ group.list|length }} developer{{ group.list|length|pluralize }}</strong> already 
+                                    {{ group.list|length|pluralize:"exists,exist" }} 
+                                    and cannot be selected for creation.
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form id="create-developers-form" method="post" action="{% url 'developer:create_developers' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Select All / Deselect All -->
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="selectAll()">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="deselectAll()">Deselect All</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-dark">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Developer Name</th>
+                                        <th>Founded</th>
+                                        <th>Country</th>
+                                        <th>Games Count</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for developer in developers %}
+                                    <tr {% if developer.exists %}class="table-warning"{% endif %}>
+                                        <td>
+                                            {% if developer.exists %}
+                                                <input type="checkbox" class="form-check-input developer-checkbox" 
+                                                    name="developer_selected" value="{{ forloop.counter0 }}"
+                                                    onchange="toggleDeveloperData(this, '{{ forloop.counter0 }}')" disabled>
+                                                <small class="text-muted d-block">Already exists</small>
+                                            {% else %}
+                                                <input type="checkbox" class="form-check-input developer-checkbox" 
+                                                    name="developer_selected" value="{{ forloop.counter0 }}"
+                                                    onchange="toggleDeveloperData(this, '{{ forloop.counter0 }}')">
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if developer.exists %}
+                                                <span style="font-weight: bold;" class="text-muted">{{ developer.name }}</span>
+                                                <small class="d-block text-dark">
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i> Developer already exists
+                                                    <a href="{{ developer.detail_url }}" target="_blank" class="text-dark text-decoration-underline ms-1">
+                                                        <i class="fas fa-external-link-alt"></i> View Developer
+                                                    </a>
+                                                </small>
+                                            {% else %}
+                                                <span style="font-weight: bold;">{{ developer.name }}</span>
+                                            {% endif %}
+                                            <!-- Hidden input to store developer data -->
+                                            <input type="hidden" class="developer-data" name="selected_developers" 
+                                                value="{{ developer.raw_data }}" {% if developer.exists %}disabled{% endif %}>
+                                        </td>
+                                        <td>{{ developer.founded|default:"-" }}</td>
+                                        <td>{{ developer.country|default:"-" }}</td>
+                                        <td>{{ developer.games_count|default:0 }}</td>
+                                        <td>
+                                            <div class="summary-text">
+                                                {{ developer.description|default:"-" }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-outline-success" id="create-developers-btn">
+                                Select developers to create
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Existing Developers Section -->
+            {% if existing_developers %}
+            <h1>Existing Developers 
+                {% if is_paginated %}
+                    ({{ paginator.count }} total - Page {{ page_obj.number }} of {{ paginator.num_pages }})
+                {% else %}
+                    ({{ page_obj|length }} total)
+                {% endif %}
+            </h1>
+            <div class="card mt-4 mb-4">
+                <div class="card-body">
+                    {% if is_paginated %}
+                        <p class="card-text">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} developers:</p>
+                    {% else %}
+                        <p class="card-text">Manage your existing developers below:</p>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="current_page" value="{{ page_obj.number|default:1 }}">
+                        <!-- Action Buttons -->
+                        <div class="mb-3">
+                            <button type="submit" name="action" value="delete_selected" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete the selected developers? This action cannot be undone.')">
+                                Delete Selected
+                            </button>
+                            <button type="submit" name="action" value="delete_unused" class="btn btn-warning btn-sm" onclick="return confirm('Are you sure you want to delete all developers with 0 games? This action cannot be undone.')">
+                                Delete Unused (0 Games)
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllExisting()">
+                                Select All
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deselectAllExisting()">
+                                Deselect All
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped table-dark">
+                                <thead>
+                                    <tr>
+                                        <th class="select-column">Select</th>
+                                        <th>Developer Name</th>
+                                        <th>Founded</th>
+                                        <th>Country</th>
+                                        <th>Games Count</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for developer in existing_developers %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="form-check-input existing-developer-checkbox" 
+                                                name="existing_developer_ids" value="{{ developer.id }}">
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'developer:developer_games' developer.slug %}" target="_blank" class="text-decoration-none orange-link">
+                                                <strong>{{ developer.name }}</strong>
+                                            </a>
+                                        </td>
+                                        <td>{{ developer.founded|default:"-" }}</td>
+                                        <td>{{ developer.country|default:"-" }}</td>
+                                        <td>{{ developer.games_count|default:0 }}</td>
+                                        <td>
+                                            <small class="text-light">{{ developer.created_on|date:"M d, Y" }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Pagination for existing developers -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">&laquo; PREV</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.next_page_number }}" class="page-link">NEXT &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/utils.js' %}"></script>
+<script src="{% static 'js/populate_developers.js' %}"></script>
+
+<script>
+function updateCreateButton() {
+    const checkedBoxes = document.querySelectorAll('.developer-checkbox:checked:not(:disabled)');
+    const createBtn = document.getElementById('create-developers-btn');
+    if (!createBtn) return;
+
+    if (checkedBoxes.length > 0) {
+        createBtn.textContent = `Create ${checkedBoxes.length} Developer${checkedBoxes.length > 1 ? 's' : ''}`;
+    } else {
+        createBtn.textContent = 'Select developers to create';
+    }
+    createBtn.disabled = false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateCreateButton();
+    const form = document.getElementById('create-developers-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkedBoxes = document.querySelectorAll('.developer-checkbox:checked:not(:disabled)');
+            if (checkedBoxes.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one developer.');
+            }
+        });
+    }
+});
+</script>
+
+{% endif %}
+{% endblock %}

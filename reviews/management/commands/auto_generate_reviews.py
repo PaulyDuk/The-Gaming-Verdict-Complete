@@ -12,7 +12,6 @@ from django.contrib.auth.models import User
 import datetime
 import random
 from django.utils import timezone
-from reviews.models import Genre
 
 
 class Command(BaseCommand):
@@ -42,7 +41,7 @@ class Command(BaseCommand):
 
         igdb = IGDBService()
         populate_helpers = PopulateCommand()
-        
+
         # Popular game franchises
         games_list = [
             "Call of Duty", "FIFA", "Grand Theft Auto", "The Witcher",
@@ -72,27 +71,29 @@ class Command(BaseCommand):
         with transaction.atomic():
             while created_count < count and attempts < max_attempts:
                 attempts += 1
-                
+
                 search_term = random.choice(games_list)
-                
+
                 try:
                     games = igdb.search_games_with_platforms(
                         search_term, limit=10
                     )
-                    
+
                     if not games:
                         self.stdout.write(
-                            self.style.WARNING(f'No games found for: {search_term}')
+                            self.style.WARNING(
+                                f'No games found for: {search_term}'
+                            )
                         )
                         continue
-                    
+
                     game = random.choice(games)
                     title = game.get('name')
                     if not title:
                         continue
-                    
+
                     slug = slugify(title)
-                    
+
                     # Skip if exists
                     if (Review.objects.filter(title__iexact=title).exists() or
                             Review.objects.filter(slug=slug).exists()):
@@ -100,31 +101,42 @@ class Command(BaseCommand):
                             self.style.WARNING(f'Skipping duplicate: {title}')
                         )
                         continue
-                    
+
                     # Create review using populate_reviews functionality
-                    review = self.create_review_from_game(
-                        game, min_score, max_score, populate_helpers
-                    )
-                    
-                    if review:
-                        created_count += 1
-                        msg = (
-                            f'Created {created_count}/{count}: '
-                            f'{title} ({review.review_score}/10)'
+                    try:
+                        review = self.create_review_from_game(
+                            game, min_score, max_score, populate_helpers
                         )
-                        self.stdout.write(self.style.SUCCESS(msg))
-                    else:
+
+                        if review:
+                            created_count += 1
+                            msg = (
+                                f'Created {created_count}/{count}: '
+                                f'{title} ({review.review_score}/10)'
+                            )
+                            self.stdout.write(self.style.SUCCESS(msg))
+                        else:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f'Failed to create review for {title}'
+                                )
+                            )
+                            continue
+                    except Exception as review_error:
                         self.stdout.write(
-                            self.style.WARNING(f'Failed to create review for {title}')
+                            self.style.ERROR(
+                                f'Review creation error for {title}: '
+                                f'{review_error}'
+                            )
                         )
                         continue
-                    
+
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(f'Error with {search_term}: {e}')
                     )
                     continue
-        
+
         final_msg = f'Created {created_count} reviews'
         self.stdout.write(self.style.SUCCESS(final_msg))
 
@@ -132,30 +144,55 @@ class Command(BaseCommand):
         """Create a review using populate_reviews functionality"""
         title = game.get('name')
         slug = slugify(title)
-        
+
         # Random score
         review_score = round(random.uniform(min_score, max_score), 1)
-        
+
         # Get developer and publisher using populate methods
         developer_obj = self.get_developer(game, helpers)
         publisher_obj = self.get_publisher(game, helpers)
-        
-        if not (developer_obj and publisher_obj):
-            return None
-        
+
+        # Create default developer/publisher if none found
+        if not developer_obj:
+            developer_obj, _ = Developer.objects.get_or_create(
+                name="Unknown Developer",
+                defaults={"description": "Developer information not available"}
+            )
+
+        if not publisher_obj:
+            publisher_obj, _ = Publisher.objects.get_or_create(
+                name="Unknown Publisher",
+                defaults={"description": "Publisher information not available"}
+            )
+
         # Game details
         description = game.get('summary', '') or f'Great game: {title}'
         release_date = self.get_release_date(game)
-        
+
         # Upload cover using populate method
         featured_image = self.get_cover(game, title, helpers)
-        if featured_image == 'placeholder':
-            return None
-            
+
         # Generate review text using populate method
-        review_text = helpers.generate_ai_review(title)
+        try:
+            review_text = helpers.generate_ai_review(title)
+            if not review_text:
+                review_text = (
+                    f"Auto-generated review for {title}. This game offers "
+                    "an engaging experience with solid gameplay mechanics."
+                )
+        except Exception as e:
+            self.stdout.write(
+                self.style.WARNING(
+                    f'AI review generation failed for {title}: {e}'
+                )
+            )
+            review_text = (
+                f"Auto-generated review for {title}. This game offers "
+                "an engaging experience with solid gameplay mechanics."
+            )
+
         reviewer = self.get_reviewer()
-        
+
         # Create review
         review = Review.objects.create(
             title=title,
@@ -172,26 +209,26 @@ class Command(BaseCommand):
             is_featured=False,
             is_published=True
         )
-        
+
         # Add genres
         self.add_genres(game, review)
-        
+
         return review
 
     def get_developer(self, game, helpers):
         """Get or create developer"""
         if not game.get('developers'):
             return None
-            
+
         dev = game['developers'][0]
         name = dev.get('name')
         if not name:
             return None
-            
+
         logo_url = dev.get('logo_url', '')
         if logo_url and logo_url.startswith('//'):
             logo_url = 'https:' + logo_url
-        
+
         cloud_logo = None
         if logo_url:
             try:
@@ -202,7 +239,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f'Logo upload failed: {e}')
                 )
-        
+
         obj, _ = Developer.objects.get_or_create(
             name=name,
             defaults={
@@ -218,16 +255,16 @@ class Command(BaseCommand):
         """Get or create publisher"""
         if not game.get('publishers'):
             return None
-            
+
         pub = game['publishers'][0]
         name = pub.get('name')
         if not name:
             return None
-            
+
         logo_url = pub.get('logo_url', '')
         if logo_url and logo_url.startswith('//'):
             logo_url = 'https:' + logo_url
-        
+
         cloud_logo = None
         if logo_url:
             try:
@@ -238,7 +275,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f'Publisher logo upload failed: {e}')
                 )
-        
+
         obj, _ = Publisher.objects.get_or_create(
             name=name,
             defaults={
@@ -269,10 +306,10 @@ class Command(BaseCommand):
         cover_url = game.get('cover_url', '')
         if not cover_url and game.get('cover'):
             cover_url = game['cover'].get('url', '')
-        
+
         if cover_url and cover_url.startswith('//'):
             cover_url = 'https:' + cover_url
-        
+
         if cover_url:
             try:
                 cloud_cover = helpers.upload_cover_to_cloudinary(
@@ -284,10 +321,9 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.WARNING(f'Cover upload failed for {title}: {e}')
                 )
-        
+
+        # Always return placeholder instead of None to avoid failures
         return 'placeholder'
-
-
 
     def get_reviewer(self):
         """Get reviewer"""

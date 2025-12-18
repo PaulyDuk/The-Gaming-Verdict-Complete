@@ -17,6 +17,16 @@
                         Reviews will include cover images, developer/publisher info, and AI-generated content.
                     </p>
                     
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
+                        <ul class="mb-0">
+                            <li><strong>Processing Time:</strong> Each review takes time to generate (API calls, image uploads, AI content)</li>
+                            <li><strong>Web Interface Limit:</strong> Maximum 25 reviews via web to prevent timeouts</li>
+                            <li><strong>For Larger Batches:</strong> Use Django management command: <code>python manage.py auto_generate_reviews --count 100</code></li>
+                            <li><strong>Dependencies:</strong> Requires IGDB API access, Cloudinary setup, and stable internet connection</li>
+                        </ul>
+                    </div>
+                    
                     <form method="post" action="{% url 'reviews:auto_generate_create' %}">
                         {% csrf_token %}
                         

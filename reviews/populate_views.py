@@ -403,7 +403,7 @@ def create_reviews_from_selection(request):
                             created_reviews += 1
 
                 except Exception as e:
-                    # Only show error modal for actual errors, not for skipped games
+                    # Only show error modal for actual errors, not skipped
                     messages.error(
                         request, f'Error processing {title}: {str(e)}')
                     continue
@@ -433,34 +433,73 @@ def auto_generate_interface(request):
 def auto_generate_reviews_view(request):
     """Auto-generate reviews using the management command"""
     from django.core.management import call_command
-    
+    from io import StringIO
+
     try:
         count = int(request.POST.get('count', 50))
         min_score = float(request.POST.get('min_score', 5.0))
         max_score = float(request.POST.get('max_score', 10.0))
-        
+
         # Validate input
         if count <= 0 or count > 100:
             messages.error(request, 'Count must be between 1 and 100')
             return redirect('reviews:auto_generate')
-        
+
         if min_score < 1 or max_score > 10 or min_score >= max_score:
             messages.error(request, 'Invalid score range (1-10, min < max)')
             return redirect('reviews:auto_generate')
-        
-        # Run the management command
-        call_command('auto_generate_reviews',
-                     count=count,
-                     min_score=min_score,
-                     max_score=max_score)
-        
-        messages.success(
-            request,
-            f'Successfully generated {count} reviews with scores '
-            f'{min_score}-{max_score}!'
-        )
-        
+
+        # Limit count for web interface to prevent timeouts
+        if count > 25:
+            messages.warning(
+                request,
+                'Limiting to 25 reviews to prevent timeout. Use Django '
+                'admin command for larger batches.'
+            )
+            count = 25
+
+        # Capture output
+        output = StringIO()
+
+        try:
+            # Run the management command with output capture
+            call_command('auto_generate_reviews',
+                         count=count,
+                         min_score=min_score,
+                         max_score=max_score,
+                         stdout=output)
+
+            output_text = output.getvalue()
+
+            # Parse success count from output
+            import re
+            success_match = re.search(r'Created (\d+) reviews', output_text)
+            if success_match:
+                created_count = success_match.group(1)
+                messages.success(
+                    request,
+                    f'Successfully generated {created_count} reviews! '
+                    f'(Requested: {count}, Scores: {min_score}-{max_score})'
+                )
+            else:
+                messages.success(
+                    request,
+                    'Auto-generation completed! Check the reviews list '
+                    'for new entries.'
+                )
+
+        except Exception as cmd_error:
+            messages.error(
+                request, f'Error during review generation: {str(cmd_error)}'
+            )
+            # Also show any captured output for debugging
+            output_text = output.getvalue()
+            if output_text:
+                messages.info(
+                    request, f'Command output: {output_text[:200]}...'
+                )
+
     except Exception as e:
-        messages.error(request, f'Error generating reviews: {str(e)}')
-    
+        messages.error(request, f'Error with input validation: {str(e)}')
+
     return redirect('reviews:auto_generate')

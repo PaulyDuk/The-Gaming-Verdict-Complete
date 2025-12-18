@@ -25,3 +25,19 @@ class Developer(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    @property
+    def games_count(self):
+        """Return the number of reviews (games) associated with this
+        developer"""
+        return self.games.count()
+
+    @property
+    def country(self):
+        """Placeholder for country field - can be added later if needed"""
+        return "-"
+
+    @property
+    def founded(self):
+        """Return founded year for template compatibility"""
+        return self.founded_year

@@ -56,7 +56,7 @@ aside.card {
     background-color: #457b9d;
     border-radius: 10px; 
     box-shadow: 0 0 15px 0 #888888;
-    padding: 12px;
+    padding: 1px;
 }
 
 .card-text {
@@ -431,7 +431,6 @@ dd {
 .publisher-card .card-text {
     display: -webkit-box;
     -webkit-line-clamp: 7;
-    line-clamp: 7;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -849,4 +848,145 @@ table.table-dark > tbody > tr.table-success > th:hover {
 
 .table-dark .table-warning .text-muted {
     color: #6c757d !important;
+}
+
+/* Populate Pages Styles */
+.summary-text {
+    max-width: 300px;
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 0.9em;
+}
+
+.select-column {
+    width: 80px;
+}
+
+.orange-link {
+    color: #ff8c00 !important;
+}
+
+.orange-link:hover {
+    color: #ffa500 !important;
+}
+
+/* Table responsive improvements */
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.table-dark th {
+    background-color: #212529;
+    border-color: #32383e;
+}
+
+.table-dark td {
+    background-color: #2c2c2c;
+    border-color: #454d55;
+}
+
+.table-warning td {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    color: #856404 !important;
+}
+
+/* Checkbox styling */
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+}
+
+/* Button spacing */
+.btn-sm {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Card styling */
+.card {
+    background-color: #343a40;
+    border: 1px solid #495057;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Alert styling */
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-color: rgba(255, 193, 7, 0.5);
+    color: #664d03;
+}
+
+/* Pagination styling */
+.pagination .page-link {
+    background-color: #343a40;
+    border-color: #495057;
+    color: #fff;
+}
+
+.pagination .page-link:hover {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #198754;
+    border-color: #198754;
+    color: #fff;
+}
+
+/* Form control improvements */
+.form-control:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Badge improvements */
+.badge {
+    font-size: 0.75em;
+}
+
+.badge.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+.badge.bg-light {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .summary-text {
+        max-width: 200px;
+        max-height: 80px;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
 }

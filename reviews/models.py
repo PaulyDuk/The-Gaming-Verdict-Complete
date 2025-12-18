@@ -68,6 +68,11 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def games_count(self):
+        """Return the number of reviews (games) associated with this genre"""
+        return self.reviews.count()
+
 
 class UserComment(models.Model):
     review = models.ForeignKey(
