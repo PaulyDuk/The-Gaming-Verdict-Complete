@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 import datetime
 import random
 from django.utils import timezone
+from reviews.models import Genre
 
 
 class Command(BaseCommand):
@@ -100,53 +101,23 @@ class Command(BaseCommand):
                         )
                         continue
                     
-                    # Random score
-                    review_score = round(
-                        random.uniform(min_score, max_score), 1
+                    # Create review using populate_reviews functionality
+                    review = self.create_review_from_game(
+                        game, min_score, max_score, populate_helpers
                     )
                     
-                    # Get developer and publisher
-                    developer_obj = self.get_developer(game, populate_helpers)
-                    publisher_obj = self.get_publisher(game, populate_helpers)
-                    
-                    if not (developer_obj and publisher_obj):
+                    if review:
+                        created_count += 1
+                        msg = (
+                            f'Created {created_count}/{count}: '
+                            f'{title} ({review.review_score}/10)'
+                        )
+                        self.stdout.write(self.style.SUCCESS(msg))
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(f'Failed to create review for {title}')
+                        )
                         continue
-                    
-                    # Game details
-                    description = (
-                        game.get('summary', '') or f'Great game: {title}'
-                    )
-                    release_date = self.get_release_date(game)
-                    featured_image = self.get_cover(game, title, populate_helpers)
-                    review_text = self.get_review_text(title, populate_helpers)
-                    reviewer = self.get_reviewer()
-                    
-                    # Create review
-                    review = Review.objects.create(
-                        title=title,
-                        slug=slug,
-                        publisher=publisher_obj,
-                        developer=developer_obj,
-                        description=description,
-                        release_date=release_date,
-                        review_score=review_score,
-                        review_text=review_text,
-                        reviewed_by=reviewer,
-                        review_date=timezone.now(),
-                        featured_image=featured_image,
-                        is_featured=False,
-                        is_published=True
-                    )
-                    
-                    # Add genres
-                    self.add_genres(game, review)
-                    
-                    created_count += 1
-                    msg = (
-                        f'Created {created_count}/{count}: '
-                        f'{title} ({review_score}/10)'
-                    )
-                    self.stdout.write(self.style.SUCCESS(msg))
                     
                 except Exception as e:
                     self.stdout.write(
@@ -156,6 +127,56 @@ class Command(BaseCommand):
         
         final_msg = f'Created {created_count} reviews'
         self.stdout.write(self.style.SUCCESS(final_msg))
+
+    def create_review_from_game(self, game, min_score, max_score, helpers):
+        """Create a review using populate_reviews functionality"""
+        title = game.get('name')
+        slug = slugify(title)
+        
+        # Random score
+        review_score = round(random.uniform(min_score, max_score), 1)
+        
+        # Get developer and publisher using populate methods
+        developer_obj = self.get_developer(game, helpers)
+        publisher_obj = self.get_publisher(game, helpers)
+        
+        if not (developer_obj and publisher_obj):
+            return None
+        
+        # Game details
+        description = game.get('summary', '') or f'Great game: {title}'
+        release_date = self.get_release_date(game)
+        
+        # Upload cover using populate method
+        featured_image = self.get_cover(game, title, helpers)
+        if featured_image == 'placeholder':
+            return None
+            
+        # Generate review text using populate method
+        review_text = helpers.generate_ai_review(title)
+        reviewer = self.get_reviewer()
+        
+        # Create review
+        review = Review.objects.create(
+            title=title,
+            slug=slug,
+            publisher=publisher_obj,
+            developer=developer_obj,
+            description=description,
+            release_date=release_date,
+            review_score=review_score,
+            review_text=review_text,
+            reviewed_by=reviewer,
+            review_date=timezone.now(),
+            featured_image=featured_image,
+            is_featured=False,
+            is_published=True
+        )
+        
+        # Add genres
+        self.add_genres(game, review)
+        
+        return review
 
     def get_developer(self, game, helpers):
         """Get or create developer"""
@@ -266,18 +287,7 @@ class Command(BaseCommand):
         
         return 'placeholder'
 
-    def get_review_text(self, title, helpers):
-        """Generate review text"""
-        # Skip AI generation for now due to rate limits
-        return (
-            f'<p>This is a comprehensive review for {title}.</p>'
-            '<p>The game offers engaging gameplay mechanics and provides '
-            'excellent entertainment value for players. With solid controls, '
-            'immersive graphics, and compelling storyline, this title '
-            'delivers a memorable gaming experience.</p>'
-            '<p>Overall, this game represents a quality addition to any '
-            'gaming library and is recommended for fans of the genre.</p>'
-        )
+
 
     def get_reviewer(self):
         """Get reviewer"""
